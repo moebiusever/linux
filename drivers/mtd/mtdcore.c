@@ -273,6 +273,36 @@ static ssize_t mtd_ecc_step_size_show(struct device *dev,
 }
 static DEVICE_ATTR(ecc_step_size, S_IRUGO, mtd_ecc_step_size_show, NULL);
 
+static ssize_t mtd_bitflip_retirelimit_show(struct device *dev,
+					    struct device_attribute *attr,
+					    char *buf)
+{
+	struct mtd_info *mtd = dev_get_drvdata(dev);
+
+	return snprintf(buf, PAGE_SIZE, "%u\n", mtd->bitflip_retirelimit);
+}
+
+static ssize_t mtd_bitflip_retirelimit_store(struct device *dev,
+					   struct device_attribute *attr,
+					   const char *buf, size_t count)
+{
+	struct mtd_info *mtd = dev_get_drvdata(dev);
+	unsigned int bitflip_retirelimit;
+	int retval;
+
+	retval = kstrtouint(buf, 0, &bitflip_retirelimit);
+	if (retval)
+		return retval;
+
+	mtd->bitflip_retirelimit = bitflip_retirelimit;
+	return count;
+}
+
+static DEVICE_ATTR(bitflip_retirelimit, S_IRUGO | S_IWUSR,
+		   mtd_bitflip_retirelimit_show,
+		   mtd_bitflip_retirelimit_store);
+
+
 static ssize_t mtd_ecc_stats_corrected_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
@@ -331,6 +361,7 @@ static struct attribute *mtd_attrs[] = {
 	&dev_attr_bad_blocks.attr,
 	&dev_attr_bbt_blocks.attr,
 	&dev_attr_bitflip_threshold.attr,
+	&dev_attr_bitflip_retirelimit.attr,
 	NULL,
 };
 ATTRIBUTE_GROUPS(mtd);
@@ -885,7 +916,10 @@ int mtd_read(struct mtd_info *mtd, loff_t from, size_t len, size_t *retlen,
 		return ret_code;
 	if (mtd->ecc_strength == 0)
 		return 0;	/* device lacks ecc */
-	return ret_code >= mtd->bitflip_threshold ? -EUCLEAN : 0;
+	if (ret_code < mtd->bitflip_threshold)
+		return 0;
+	else
+		return ret_code > mtd->bitflip_retirelimit ? -ENAVAIL : -EUCLEAN;
 }
 EXPORT_SYMBOL_GPL(mtd_read);
 
@@ -943,7 +977,10 @@ int mtd_read_oob(struct mtd_info *mtd, loff_t from, struct mtd_oob_ops *ops)
 		return ret_code;
 	if (mtd->ecc_strength == 0)
 		return 0;	/* device lacks ecc */
-	return ret_code >= mtd->bitflip_threshold ? -EUCLEAN : 0;
+	if (ret_code < mtd->bitflip_threshold)
+		return 0;
+	else
+		return ret_code > mtd->bitflip_retirelimit ? -ENAVAIL : -EUCLEAN;
 }
 EXPORT_SYMBOL_GPL(mtd_read_oob);
 

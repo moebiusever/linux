@@ -31,6 +31,12 @@
 #include <linux/bug.h>
 #include <linux/compiler.h>
 #include <linux/sort.h>
+#include <linux/of.h>
+#include <linux/of_address.h>
+#include <linux/of_gpio.h>
+#include <asm/mach/map.h>
+#include <asm/io.h>
+#include <linux/regmap.h>
 
 #include <asm/unified.h>
 #include <asm/cp15.h>
@@ -836,12 +842,39 @@ static int __init customize_machine(void)
 	return 0;
 }
 arch_initcall(customize_machine);
+#define OCOTP_CFG0  0x410
+#define OCOTP_CFG1  0x420
 
 static int __init init_machine_late(void)
 {
+	struct device_node *np;
+	void __iomem *base;
+
 	if (machine_desc->init_late)
 		machine_desc->init_late();
+	
+        np = of_find_compatible_node(NULL, NULL, "fsl,imx6ul-ocotp");
+
+        if (!np) {
+                pr_warn("failed to find ocotp node\n");
+                return -ENODEV;
+        }        
+
+        base = of_iomap(np, 0);
+        if (!base) {
+                pr_warn("failed to map ocotp\n");
+                goto put_node;
+        }
+
+        system_serial_low =  readl_relaxed(base + OCOTP_CFG0);
+        system_serial_high =  readl_relaxed(base + OCOTP_CFG1);
+
 	return 0;
+
+put_node:
+	of_node_put(np);
+	return 0;
+
 }
 late_initcall(init_machine_late);
 

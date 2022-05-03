@@ -1,8 +1,8 @@
 VERSION = 4
 PATCHLEVEL = 1
-SUBLEVEL = 0
+SUBLEVEL = 15
 EXTRAVERSION =
-NAME = Hurr durr I'ma sheep
+NAME = Series 4800
 
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"
@@ -249,8 +249,8 @@ SUBARCH := $(shell uname -m | sed -e s/i.86/x86/ -e s/x86_64/x86/ \
 # "make" in the configured kernel build directory always uses that.
 # Default value for CROSS_COMPILE is not to prefix executables
 # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
-ARCH		?= $(SUBARCH)
-CROSS_COMPILE	?= $(CONFIG_CROSS_COMPILE:"%"=%)
+ARCH		= arm
+CROSS_COMPILE	= arm-poky-linux-gnueabi-
 
 # Architecture as present in compile.h
 UTS_MACHINE 	:= $(ARCH)
@@ -769,7 +769,7 @@ KBUILD_CFLAGS   += $(call cc-option,-Werror=implicit-int)
 KBUILD_CFLAGS   += $(call cc-option,-Werror=strict-prototypes)
 
 # Prohibit date/time macros, which would make the build non-deterministic
-KBUILD_CFLAGS   += $(call cc-option,-Werror=date-time)
+KBUILD_CFLAGS   += $(call cc-option,-Wno-error=date-time)
 
 # use the deterministic mode of AR if available
 KBUILD_ARFLAGS := $(call ar-option,D)
@@ -783,10 +783,11 @@ endif
 include scripts/Makefile.kasan
 include scripts/Makefile.extrawarn
 
-# Add user supplied CPPFLAGS, AFLAGS and CFLAGS as the last assignments
-KBUILD_CPPFLAGS += $(KCPPFLAGS)
-KBUILD_AFLAGS += $(KAFLAGS)
-KBUILD_CFLAGS += $(KCFLAGS)
+# Add any arch overrides and user supplied CPPFLAGS, AFLAGS and CFLAGS as the
+# last assignments
+KBUILD_CPPFLAGS += $(ARCH_CPPFLAGS) $(KCPPFLAGS)
+KBUILD_AFLAGS   += $(ARCH_AFLAGS)   $(KAFLAGS)
+KBUILD_CFLAGS   += $(ARCH_CFLAGS)   $(KCFLAGS)
 
 # Use --build-id when available.
 LDFLAGS_BUILD_ID = $(patsubst -Wl$(comma)%,%,\
@@ -1172,7 +1173,7 @@ CLEAN_DIRS  += $(MODVERDIR)
 
 # Directories & files removed with 'make mrproper'
 MRPROPER_DIRS  += include/config usr/include include/generated          \
-		  arch/*/include/generated .tmp_objdiff
+		  arch/*/include/generated .tmp_objdiff .tmp
 MRPROPER_FILES += .config .config.old .version .old_version \
 		  Module.symvers tags TAGS cscope* GPATH GTAGS GRTAGS GSYMS \
 		  signing_key.priv signing_key.x509 x509.genkey		\

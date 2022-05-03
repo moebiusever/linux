@@ -35,6 +35,9 @@
 #include <linux/usb/serial.h>
 #include <linux/serial.h>
 #include "usb-wwan.h"
+#define HW_bcdUSB 0x0110
+#define HUAWEI_VENDOR_ID 0x12d1
+
 
 void usb_wwan_dtr_rts(struct usb_serial_port *port, int on)
 {
@@ -186,6 +189,7 @@ int usb_wwan_write(struct tty_struct *tty, struct usb_serial_port *port,
 	int i;
 	int left, todo;
 	struct urb *this_urb = NULL;	/* spurious */
+	struct usb_host_endpoint *ep=NULL;
 	int err;
 	unsigned long flags;
 
@@ -221,6 +225,16 @@ int usb_wwan_write(struct tty_struct *tty, struct usb_serial_port *port,
 		/* send the data */
 		memcpy(this_urb->transfer_buffer, buf, todo);
 		this_urb->transfer_buffer_length = todo;
+		
+		if((HUAWEI_VENDOR_ID == port->serial->dev->descriptor.idVendor)
+                               	&& (HW_bcdUSB != port->serial->dev->descriptor.bcdUSB)){
+                               	ep = usb_pipe_endpoint(this_urb->dev, this_urb->pipe);
+                               	if(ep && (0 != this_urb->transfer_buffer_length)
+                                       	&& (0 == this_urb->transfer_buffer_length %
+                                       	ep->desc.wMaxPacketSize)){
+                               		this_urb->transfer_flags |= URB_ZERO_PACKET;
+                               	}       
+              	}		
 
 		spin_lock_irqsave(&intfdata->susp_lock, flags);
 		if (intfdata->suspended) {
@@ -470,7 +484,25 @@ static struct urb *usb_wwan_setup_urb(struct usb_serial_port *port,
 	usb_fill_bulk_urb(urb, serial->dev,
 			  usb_sndbulkpipe(serial->dev, endpoint) | dir,
 			  buf, len, callback, ctx);
-
+	
+	if (dir == USB_DIR_OUT) {
+	struct usb_device_descriptor *desc = &serial->dev->descriptor;
+	if (desc->idVendor == cpu_to_le16(0x05C6) && desc->idProduct == cpu_to_le16(0x9090))
+		urb->transfer_flags |= URB_ZERO_PACKET;
+	if (desc->idVendor == cpu_to_le16(0x05C6) && desc->idProduct == cpu_to_le16(0x9003))
+		urb->transfer_flags |= URB_ZERO_PACKET;
+	if (desc->idVendor == cpu_to_le16(0x05C6) && desc->idProduct == cpu_to_le16(0x9215))
+		urb->transfer_flags |= URB_ZERO_PACKET;
+	if (desc->idVendor == cpu_to_le16(0x2C7C))
+		urb->transfer_flags |= URB_ZERO_PACKET;
+	}
+#if 1 //Added by Quectel for Zero Packet
+	if (dir == USB_DIR_OUT) {
+		struct usb_device_descriptor *desc = &serial->dev->descriptor;
+		if (desc->idVendor == cpu_to_le16(0x2C7C))
+			urb->transfer_flags |= URB_ZERO_PACKET;
+	}
+#endif
 	return urb;
 }
 

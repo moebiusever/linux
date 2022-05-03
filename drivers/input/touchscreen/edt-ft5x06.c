@@ -978,6 +978,7 @@ static int edt_ft5x06_ts_probe(struct i2c_client *client,
 		if (error) {
 			dev_err(&client->dev,
 				"DT probe failed and no platform data present\n");
+			goto irq_free;
 			return error;
 		}
 	} else {
@@ -997,6 +998,7 @@ static int edt_ft5x06_ts_probe(struct i2c_client *client,
 			dev_err(&client->dev,
 				"Failed to request GPIO %d, error %d\n",
 				tsdata->irq_pin, error);
+			goto irq_free;
 			return error;
 		}
 	}
@@ -1031,20 +1033,28 @@ static int edt_ft5x06_ts_probe(struct i2c_client *client,
 		"Model \"%s\", Rev. \"%s\", %dx%d sensors\n",
 		tsdata->name, fw_version, tsdata->num_x, tsdata->num_y);
 
-	input->name = tsdata->name;
+	/*input->name = tsdata->name;*/
+	input->name = "edt-ft5x06";
 	input->id.bustype = BUS_I2C;
 	input->dev.parent = &client->dev;
 
 	__set_bit(EV_KEY, input->evbit);
 	__set_bit(EV_ABS, input->evbit);
 	__set_bit(BTN_TOUCH, input->keybit);
-	input_set_abs_params(input, ABS_X, 0, tsdata->num_x * 64 - 1, 0, 0);
+/*	input_set_abs_params(input, ABS_X, 0, tsdata->num_x * 64 - 1, 0, 0);
 	input_set_abs_params(input, ABS_Y, 0, tsdata->num_y * 64 - 1, 0, 0);
 	input_set_abs_params(input, ABS_MT_POSITION_X,
 			     0, tsdata->num_x * 64 - 1, 0, 0);
 	input_set_abs_params(input, ABS_MT_POSITION_Y,
 			     0, tsdata->num_y * 64 - 1, 0, 0);
-
+*/
+	input_set_abs_params(input, ABS_X, 0, 800, 0, 0);
+	input_set_abs_params(input, ABS_Y, 0, 480, 0, 0);
+	input_set_abs_params(input, ABS_MT_POSITION_X,
+			     0, 800, 0, 0);
+	input_set_abs_params(input, ABS_MT_POSITION_Y,
+			     0, 480, 0, 0);
+	
 	if (!pdata)
 		touchscreen_parse_of_params(input);
 
@@ -1082,6 +1092,8 @@ static int edt_ft5x06_ts_probe(struct i2c_client *client,
 		client->irq, tsdata->wake_pin, tsdata->reset_pin);
 
 	return 0;
+irq_free:
+	free_irq(tsdata->irq_pin, tsdata);
 
 err_remove_attrs:
 	sysfs_remove_group(&client->dev.kobj, &edt_ft5x06_attr_group);

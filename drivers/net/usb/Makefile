@@ -9,6 +9,7 @@ obj-$(CONFIG_USB_RTL8150)	+= rtl8150.o
 obj-$(CONFIG_USB_RTL8152)	+= r8152.o
 obj-$(CONFIG_USB_HSO)		+= hso.o
 obj-$(CONFIG_USB_NET_AX8817X)	+= asix.o
+#obj-$(CONFIG_USB_NET_AX8817X)	+= AX88772C_772B_772A_760_772_178_LINUX_DRIVER_v4.19.0_Source/asix.o
 asix-y := asix_devices.o asix_common.o ax88172a.o
 obj-$(CONFIG_USB_NET_AX88179_178A)      += ax88179_178a.o
 obj-$(CONFIG_USB_NET_CDCETHER)	+= cdc_ether.o
@@ -37,4 +38,5 @@ obj-$(CONFIG_USB_NET_HUAWEI_CDC_NCM)	+= huawei_cdc_ncm.o
 obj-$(CONFIG_USB_VL600)		+= lg-vl600.o
 obj-$(CONFIG_USB_NET_QMI_WWAN)	+= qmi_wwan.o
 obj-$(CONFIG_USB_NET_CDC_MBIM)	+= cdc_mbim.o
+obj-y  += GobiUSB/
 

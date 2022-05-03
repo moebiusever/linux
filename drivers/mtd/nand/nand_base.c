@@ -4192,6 +4192,9 @@ int nand_scan_tail(struct mtd_info *mtd)
 	 */
 	if (!mtd->bitflip_threshold)
 		mtd->bitflip_threshold = DIV_ROUND_UP(mtd->ecc_strength * 3, 4);
+	if (!mtd->bitflip_retirelimit)
+               mtd->bitflip_retirelimit
+               = (mtd->bitflip_threshold + mtd->ecc_strength + 1)/2;	
 
 	/* Check, if we should skip the bad block table scan */
 	if (chip->options & NAND_SKIP_BBTSCAN)

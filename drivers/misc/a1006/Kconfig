@@ -1,0 +1,12 @@
+#
+# forlinx  drivers a1006
+#
+menu "Forlinx a1006"
+config a1006
+    bool "a1006 driver"
+    default y
+    
+	help
+		a1006
+endmenu
+

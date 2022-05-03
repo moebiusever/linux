@@ -38,6 +38,11 @@
 
 #include <asm/irq.h>
 
+/* general PHY control reg in vendor specific block. */ 
+#define MII_KSZPHY_CTRL         0x1F 
+/*50M clk*/ 
+#define KSZ8051_RMII_50MHZ_CLK          (1 << 7) 
+
 static const char *phy_speed_to_str(int speed)
 {
 	switch (speed) {
@@ -785,11 +790,19 @@ void phy_state_machine(struct work_struct *work)
 			container_of(dwork, struct phy_device, state_queue);
 	bool needs_aneg = false, do_suspend = false;
 	int err = 0;
+	int regval = 0;
 
 	mutex_lock(&phydev->lock);
 
 	if (phydev->drv->link_change_notify)
 		phydev->drv->link_change_notify(phydev);
+	
+    regval = phy_read(phydev, MII_KSZPHY_CTRL);
+	if((regval&KSZ8051_RMII_50MHZ_CLK)!=1)
+    {
+        regval |= KSZ8051_RMII_50MHZ_CLK;
+        phy_write(phydev, MII_KSZPHY_CTRL, regval);
+    }
 
 	switch (phydev->state) {
 	case PHY_DOWN:

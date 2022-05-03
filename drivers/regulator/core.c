@@ -779,7 +779,7 @@ static int suspend_prepare(struct regulator_dev *rdev, suspend_state_t state)
 static void print_constraints(struct regulator_dev *rdev)
 {
 	struct regulation_constraints *constraints = rdev->constraints;
-	char buf[80] = "";
+	char buf[160] = "";
 	int count = 0;
 	int ret;
 
@@ -1865,6 +1865,7 @@ static int _regulator_do_enable(struct regulator_dev *rdev)
 {
 	int ret, delay;
 
+	_notifier_call_chain(rdev, REGULATOR_EVENT_PRE_DO_ENABLE, NULL);
 	/* Query before enabling in case configuration dependent.  */
 	ret = _regulator_get_enable_time(rdev);
 	if (ret >= 0) {
@@ -1924,6 +1925,7 @@ static int _regulator_do_enable(struct regulator_dev *rdev)
 	_regulator_enable_delay(delay);
 
 	trace_regulator_enable_complete(rdev_get_name(rdev));
+	_notifier_call_chain(rdev, REGULATOR_EVENT_AFT_DO_ENABLE, NULL);
 
 	return 0;
 }
@@ -2001,6 +2003,7 @@ static int _regulator_do_disable(struct regulator_dev *rdev)
 {
 	int ret;
 
+	_notifier_call_chain(rdev, REGULATOR_EVENT_PRE_DO_DISABLE, NULL);
 	trace_regulator_disable(rdev_get_name(rdev));
 
 	if (rdev->ena_pin) {
